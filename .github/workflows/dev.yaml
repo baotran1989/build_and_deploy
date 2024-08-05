@@ -2,7 +2,7 @@ name: dev
 
 on:
   repository_dispatch:
-    types:[dummy_service_development]
+    types: [dummy_service_development]
 
 jobs:
   ping-pong:
