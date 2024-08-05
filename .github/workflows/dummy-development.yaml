@@ -1,24 +1,10 @@
-name: dev
+name: dummy-development
 
 on:
   repository_dispatch:
     types: [dummy_service_development]
 
 jobs:
-  ping-pong:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Event Information
-        run: |
-          echo "Event '${{ github.event.action }}' received from '${{ github.event.client_payload.repository }}'"
-          echo "ref name '${{ github.event.client_payload.ref_name }}'"
-      - name: PONG - Dispatch response to received PING
-        if: github.event.action == 'ping'
-        run: |
-          curl -X POST https://api.github.com/repos/baotran1989/testing-github/dispatches \
-          -H 'Accept: application/vnd.github.everest-preview+json' \
-          -u ${{ secrets.ACCESS_TOKEN }} \
-          --data '{"event_type": "pong", "client_payload": { "repository": "'"$GITHUB_REPOSITORY"'" }}'
   BuildAndUnitTests:
     runs-on: ubuntu-latest # Lưu ý: lúc build có thể dùng public runner cho nhanh
     steps:
