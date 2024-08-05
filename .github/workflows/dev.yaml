@@ -81,7 +81,7 @@ jobs:
   DeployToDev:
     needs: [ BuildAndPushDockerImage ]
     if: github.event.client_payload.ref_name == 'development'
-    runs-on: ubuntu-latest
+    runs-on: eos
     steps:
       - name: Dummy
         run: |
@@ -97,10 +97,10 @@ jobs:
           sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' dummy_service/deployments/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          cat dummy_service/deployments/frontend/deployment.yaml
+          kubectl apply -f dummy_service/deployments/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          cat dummy_service/deployments/frontend/deployment-frontend-2.yaml
+          kubectl apply -f dummy_service/deployments/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          cat dummy_service/deployments/backend/deployment.yaml
+          kubectl apply -f dummy_service/deployments/backend/deployment.yaml
