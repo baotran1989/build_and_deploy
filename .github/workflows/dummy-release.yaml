@@ -11,8 +11,8 @@ env:
 jobs:
   DeployToSanbox:
     if: |
-    (github.event.client_payload.ref_name == 'release' &&
-    github.event.client_payload.environment == 'sanbox')
+      github.event.client_payload.ref_name == 'release' &&
+      github.event.client_payload.environment == 'sanbox'
     runs-on: eos
     environment: sanbox
     steps:
@@ -37,8 +37,8 @@ jobs:
 
   DeployToProduction:
     if: |
-      (github.event.client_payload.ref_name == 'release' &&
-      github.event.client_payload.environment == 'production')
+      github.event.client_payload.ref_name == 'release' &&
+      github.event.client_payload.environment == 'production'
     runs-on: eos
     environment: production
     steps:
