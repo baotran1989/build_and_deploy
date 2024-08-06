@@ -22,13 +22,25 @@ spec:
           imagePullPolicy: Always
           env:
           - name: AppSettings__ExternalAPIMessageA
-            value: "http://izota-dummy-service.dev-backend.svc.cluster.local/api/backend/message-a"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__ExternalAPIMessageA
           - name: AppSettings__ExternalAPIMessageB
-            value: "http://izota-dummy-service.dev-backend.svc.cluster.local/api/backend/message-b"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__ExternalAPIMessageB
           - name: AppSettings__ExternalAPIMessageC
-            value: "http://izota-dummy-service.dev-backend.svc.cluster.local/api/backend/message-c"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__ExternalAPIMessageC
           - name: AppSettings__StartupTime
-            value: "35"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__StartupTime
           ports:
             - containerPort: 8080
               protocol: TCP
@@ -45,23 +57,3 @@ spec:
   ports:
     - port: 80
       targetPort: 8080
-
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: izota-dummy
-#  namespace: dev-frontend
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: izota-dummy.mpire.asia
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: izota-dummy-service
-#                port:
-#                  number: 80
-#            path: /
-#            pathType: Prefix

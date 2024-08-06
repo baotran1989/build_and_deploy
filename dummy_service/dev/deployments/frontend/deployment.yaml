@@ -27,13 +27,25 @@ spec:
               cpu: "200m"
           env:
           - name: AppSettings__ExternalAPIMessageA
-            value: "http://izota-dummy-service.dev-backend.svc.cluster.local/api/backend/message-a"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__ExternalAPIMessageA
           - name: AppSettings__ExternalAPIMessageB
-            value: "http://izota-dummy-service.dev-backend.svc.cluster.local/api/backend/message-b"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__ExternalAPIMessageB
           - name: AppSettings__ExternalAPIMessageC
-            value: "http://izota-dummy-service.dev-backend.svc.cluster.local/api/backend/message-c"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__ExternalAPIMessageC
           - name: AppSettings__StartupTime
-            value: "35"
+            valueFrom:
+              configMapKeyRef:
+                name: izota-dummy-config
+                key: AppSettings__StartupTime
           ports:
             - containerPort: 8080
               protocol: TCP
