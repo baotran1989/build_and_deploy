@@ -4,7 +4,7 @@ on:
   repository_dispatch:
     types: [dummy_service_development]
 env:
-  PATH_DEPLOYMENT_DEV: 'dummy_service/dev/deployments/'
+  PATH_ENV_DEV: 'dummy_service/dev'
 
 jobs:
   DeployToDev:
@@ -18,17 +18,17 @@ jobs:
         uses: actions/checkout@v3
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_DEV }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_DEV }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_DEV }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_ENV_DEV }}/deployments/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_ENV_DEV }}/deployments/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_ENV_DEV }}/deployments/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          kubectl apply -f ${{ env.PATH_DEPLOYMENT_DEV }}/configmap/frontend-config.yaml
-          kubectl apply -f ${{ env.PATH_DEPLOYMENT_DEV }}/frontend/deployment.yaml
+          kubectl apply -f ${{ env.PATH_ENV_DEV }}/configmap/frontend-config.yaml
+          kubectl apply -f ${{ env.PATH_ENV_DEV }}/deployments/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          kubectl apply -f ${{ env.PATH_DEPLOYMENT_DEV }}/frontend/deployment-frontend-2.yaml
+          kubectl apply -f ${{ env.PATH_ENV_DEV }}/deployments/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          kubectl apply -f ${{ env.PATH_DEPLOYMENT_DEV }}/configmap/backend-config.yaml
-          kubectl apply -f ${{ env.PATH_DEPLOYMENT_DEV }}/backend/deployment.yaml
+          kubectl apply -f ${{ env.PATH_ENV_DEV }}/deployments/configmap/backend-config.yaml
+          kubectl apply -f ${{ env.PATH_ENV_DEV }}/deployments/backend/deployment.yaml

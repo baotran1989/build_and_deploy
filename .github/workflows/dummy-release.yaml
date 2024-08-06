@@ -5,8 +5,8 @@ on:
     types: [dummy_service_release]
 env:
   TAG_PREFIX: 'v'
-  PATH_DEPLOYMENT_SANBOX: 'dummy_service/sanbox/deployments/'
-  PATH_DEPLOYMENT_PRODUCTION: 'dummy_service/production/deployments/'
+  PATH_SANBOX_ENV: 'dummy_service/sanbox'
+  PATH_PRODUCTION_ENV: 'dummy_service/production'
 
 jobs:
   DeployToSanbox:
@@ -22,18 +22,18 @@ jobs:
 
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_SANBOX_ENV }}/deployments/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_SANBOX_ENV }}/deployments/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_SANBOX_ENV }}/deployments/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
+          cat ${{ env.PATH_SANBOX_ENV }}/deployments/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
+          cat ${{ env.PATH_SANBOX_ENV }}/deployments/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
+          cat ${{ env.PATH_SANBOX_ENV }}/deployments/backend/deployment.yaml
 
   DeployToProduction:
     if: |
@@ -49,15 +49,15 @@ jobs:
         uses: actions/checkout@v3
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_PRODUCTION_ENV }}/deployments/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_PRODUCTION_ENV }}/deployments/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_PRODUCTION_ENV }}/deployments/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
+          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/deployments/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
+          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/deployments/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
+          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/deployments/backend/deployment.yaml
