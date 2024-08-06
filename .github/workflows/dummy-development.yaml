@@ -3,6 +3,8 @@ name: dummy-development
 on:
   repository_dispatch:
     types: [dummy_service_development]
+env:
+  PATH_DEPLOYMENT_DEV: 'dummy_service/dev/deployments/'
 
 jobs:
   BuildAndUnitTests:
@@ -78,15 +80,15 @@ jobs:
         uses: actions/checkout@v3
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' dummy_service/deployments/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' dummy_service/deployments/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' dummy_service/deployments/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ PATH_DEPLOYMENT_DEV }}/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ PATH_DEPLOYMENT_DEV }}/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ PATH_DEPLOYMENT_DEV }}/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          kubectl apply -f dummy_service/deployments/frontend/deployment.yaml
+          kubectl apply -f ${{ PATH_DEPLOYMENT_DEV }}/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          kubectl apply -f dummy_service/deployments/frontend/deployment-frontend-2.yaml
+          kubectl apply -f ${{ PATH_DEPLOYMENT_DEV }}/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          kubectl apply -f dummy_service/deployments/backend/deployment.yaml
+          kubectl apply -f ${{ PATH_DEPLOYMENT_DEV }}/backend/deployment.yaml
