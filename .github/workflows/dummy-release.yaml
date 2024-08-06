@@ -51,7 +51,7 @@ jobs:
         id: release_dry_run
         uses: btnguyen2k/action-semrelease@v3
         with:
-          dry-run: true
+          dry-run: false
           auto-mode: true
           github-token: ${{ secrets.ACCESS_TOKEN }}
           tag-major-release: false
@@ -88,14 +88,10 @@ jobs:
         with:
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox-${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox
+            ${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-${{ github.sha }}
+            ${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}
           file: ./Dockerfile
           context: ./
-      - name: Set output docker image
-        id: set_docker_image
-        run: |
-          echo "DOCKER_IMAGE_TAG=dev-${{ env.CURRENT_DATE }}-${{ github.sha }}" >> "$GITHUB_OUTPUT"
 
 
   DeployToSanbox:
@@ -108,23 +104,32 @@ jobs:
         run: |
           echo "VERSION=${{ needs.ReleaseDryRun.outputs.VERSION }}"
           echo "RELEASE_NOTES=${{ needs.ReleaseDryRun.outputs.RELEASE_NOTES }}"
-          echo "DOCKER_IMAGE_TAG=${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}"
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Tag Docker image
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION
+          docker tag ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION-sanbox
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          cat dummy_service/deployments/frontend/deployment.yaml
+          cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          cat dummy_service/deployments/frontend/deployment-frontend-2.yaml
+          cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          cat dummy_service/deployments/backend/deployment.yaml
+          cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
 
   DeployToProduction:
     needs: [ ReleaseDryRun, BuildAndPushDockerImage, DeployToSanbox ]
@@ -141,15 +146,15 @@ jobs:
         uses: actions/checkout@v3
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
-          cat dummy_service/deployments/frontend/deployment.yaml
+          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
       - name: Deploy Frontend 2
         run: |
-          cat dummy_service/deployments/frontend/deployment-frontend-2.yaml
+          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
       - name: Deploy Backend
         run: |
-          cat dummy_service/deployments/backend/deployment.yaml
+          cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
