@@ -9,123 +9,22 @@ env:
   PATH_DEPLOYMENT_PRODUCTION: 'dummy_service/production/deployments/'
 
 jobs:
-  BuildAndUnitTests:
-    runs-on: ubuntu-latest # Lưu ý: lúc build có thể dùng public runner cho nhanh
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ github.event.client_payload.repository }}
-          ref: ${{ github.event.client_payload.sha }}
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Set up DotNet SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-      - name: Install dependencies
-        run: dotnet restore
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
-      - name: Test
-        run: dotnet test --no-build --configuration Release
-  ReleaseDryRun:
-    needs: [ BuildAndUnitTests ]
-    if: github.event.client_payload.ref_name == 'release'
-    runs-on: ubuntu-latest # Lưu ý: lúc build có thể dùng public runner cho nhanh
-    outputs:
-      RESULT: ${{ steps.release_dry_run.outputs.result }}
-      VERSION: ${{ steps.release_dry_run.outputs.releaseVersion }}
-      RELEASE_NOTES: ${{ steps.release_dry_run.outputs.releaseNotes }}
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.client_payload.repository }}
-          ref: ${{ github.event.client_payload.sha }}
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Install Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-      - name: Release (dry-run)
-        id: release_dry_run
-        uses: btnguyen2k/action-semrelease@v3
-        with:
-          dry-run: false
-          auto-mode: true
-          github-token: ${{ secrets.ACCESS_TOKEN }}
-          tag-major-release: false
-          tag-minor-release: false
-          branches: ${{ github.event.client_payload.ref_name }}
-          tag-prefix: ${{ env.TAG_PREFIX }}
-          tag-only: true
-  BuildAndPushDockerImage:
-    needs: [ ReleaseDryRun ]
-    if: ${{ needs.ReleaseDryRun.outputs.VERSION }} == 'SUCCESS'
-    runs-on: ubuntu-latest # Lưu ý: lúc build có thể dùng public runner cho nhanh
-    outputs:
-      DOCKER_IMAGE_TAG: ${{ steps.set_docker_image.outputs.DOCKER_IMAGE_TAG }}
-    steps:
-      - name: Dummy
-        run: |
-          echo "VERSION=${{ needs.ReleaseDryRun.outputs.VERSION }}"
-          echo "RELEASE_NOTES=${{ needs.ReleaseDryRun.outputs.RELEASE_NOTES }}"
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.client_payload.repository }}
-          ref: ${{ github.event.client_payload.sha }}
-          token: ${{ secrets.ACCESS_TOKEN }}
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
-      - name: Build and push container image to registry
-        uses: docker/build-push-action@v5
-        with:
-          push: true
-          tags: |
-            ${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-${{ github.sha }}
-            ${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}
-          file: ./Dockerfile
-          context: ./
-
-
   DeployToSanbox:
-    needs: [ ReleaseDryRun, BuildAndPushDockerImage ]
-    if: ${{ needs.ReleaseDryRun.outputs.VERSION }} == 'SUCCESS'
+    if: |
+    github.event.client_payload.ref_name == 'release' &&
+    github.event.client_payload.environment == 'sanbox'
     runs-on: eos
     environment: sanbox
     steps:
       - name: Dummy
         run: |
-          echo "VERSION=${{ needs.ReleaseDryRun.outputs.VERSION }}"
-          echo "RELEASE_NOTES=${{ needs.ReleaseDryRun.outputs.RELEASE_NOTES }}"
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Set up Docker
-        uses: docker/setup-buildx-action@v3
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_TOKEN }}
+          echo "DOCKER_IMAGE_TAG=${{ github.event.client_payload.docker_image_tag }}"
 
-      - name: Tag Docker image
-        run: |
-          docker pull ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION
-          docker tag ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION-sanbox
-      - name: Push Docker image
-        run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION-sanbox
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
           cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
@@ -137,23 +36,22 @@ jobs:
           cat ${{ env.PATH_DEPLOYMENT_SANBOX }}/backend/deployment.yaml
 
   DeployToProduction:
-    needs: [ ReleaseDryRun, BuildAndPushDockerImage, DeployToSanbox ]
-    if: ${{ needs.ReleaseDryRun.outputs.VERSION }} == 'SUCCESS'
+    if: |
+      github.event.client_payload.ref_name == 'release' &&
+      github.event.client_payload.environment == 'production'
     runs-on: eos
     environment: production
     steps:
       - name: Dummy
         run: |
-          echo "VERSION=${{ needs.ReleaseDryRun.outputs.VERSION }}"
-          echo "RELEASE_NOTES=${{ needs.ReleaseDryRun.outputs.RELEASE_NOTES }}"
-          echo "DOCKER_IMAGE_TAG=${{ needs.BuildAndPushDockerImage.outputs.DOCKER_IMAGE_TAG }}"
+          echo "DOCKER_IMAGE_TAG=${{ github.event.client_payload.docker_image_tag }}"
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Replace docker image in file deployment
         run: |
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
-          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
-          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
+          sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment-frontend-2.yaml
+          sed -i 's|DOCKER_IMAGE_BACKEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ github.event.client_payload.docker_image_tag }}|g' ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/backend/deployment.yaml
       - name: Deploy Frontend
         run: |
           cat ${{ env.PATH_DEPLOYMENT_PRODUCTION }}/frontend/deployment.yaml
