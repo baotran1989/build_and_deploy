@@ -116,6 +116,9 @@ jobs:
         run: |
           docker pull ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION
           docker tag ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION-sanbox
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/izota-dummy:needs.ReleaseDryRun.outputs.VERSION-sanbox
       - name: Replace docker image in file deployment
         run: |
           sed -i 's|DOCKER_IMAGE_FRONTEND|${{ secrets.DOCKER_USERNAME }}/izota-dummy:${{ needs.ReleaseDryRun.outputs.VERSION }}-sanbox|g' ${{ env.PATH_DEPLOYMENT_SANBOX }}/frontend/deployment.yaml
